@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "../components/ui/checkbox"
 import { PlusCircle, Search, Tag } from "lucide-react"
-import Cookies from 'js-cookie'
 
 interface Idea {
   id: number
@@ -23,14 +22,15 @@ export default function ProjectIdeasList() {
   const [newIdea, setNewIdea] = useState({ title: "", description: "", tags: "" })
 
   useEffect(() => {
-    fetchIdeas()
+    const storedIdeas = localStorage.getItem('projectIdeas')
+    if (storedIdeas) {
+      setIdeas(JSON.parse(storedIdeas))
+    }
   }, [])
 
-  const fetchIdeas = async () => {
-    const response = await fetch('/api/ideas')
-    const data = await response.json()
-    setIdeas(data)
-  }
+  useEffect(() => {
+    localStorage.setItem('projectIdeas', JSON.stringify(ideas))
+  }, [ideas])
 
   const filteredIdeas = ideas.filter(idea => 
     idea.title.toLowerCase().includes(filterText.toLowerCase()) ||
@@ -38,35 +38,24 @@ export default function ProjectIdeasList() {
     idea.tags.some(tag => tag.toLowerCase().includes(filterText.toLowerCase()))
   )
 
-  const handleAddIdea = async (e: React.FormEvent) => {
+  const handleAddIdea = (e: React.FormEvent) => {
     e.preventDefault()
     const tags = newIdea.tags.split(',').map(tag => tag.trim())
-    const response = await fetch('/api/ideas', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ...newIdea, tags }),
-    })
-    const addedIdea = await response.json()
+    const addedIdea = {
+      id: Date.now(),
+      title: newIdea.title,
+      description: newIdea.description,
+      tags,
+      completed: false
+    }
     setIdeas([...ideas, addedIdea])
     setNewIdea({ title: "", description: "", tags: "" })
   }
 
-  const handleToggleComplete = async (id: number) => {
-    const ideaToUpdate = ideas.find(idea => idea.id === id)
-    if (ideaToUpdate) {
-      const updatedIdea = { ...ideaToUpdate, completed: !ideaToUpdate.completed }
-      const response = await fetch('/api/ideas', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedIdea),
-      })
-      const result = await response.json()
-      setIdeas(ideas.map(idea => idea.id === id ? result : idea))
-    }
+  const handleToggleComplete = (id: number) => {
+    setIdeas(ideas.map(idea => 
+      idea.id === id ? { ...idea, completed: !idea.completed } : idea
+    ))
   }
 
   return (
