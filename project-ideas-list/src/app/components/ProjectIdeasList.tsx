@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "../components/ui/checkbox"
 import { PlusCircle, Search, Tag } from "lucide-react"
+import Cookies from 'js-cookie'
 
 interface Idea {
   id: number
   title: string
   description: string
   tags: string[]
+  completed: boolean
 }
 
 export default function ProjectIdeasList() {
@@ -48,6 +51,22 @@ export default function ProjectIdeasList() {
     const addedIdea = await response.json()
     setIdeas([...ideas, addedIdea])
     setNewIdea({ title: "", description: "", tags: "" })
+  }
+
+  const handleToggleComplete = async (id: number) => {
+    const ideaToUpdate = ideas.find(idea => idea.id === id)
+    if (ideaToUpdate) {
+      const updatedIdea = { ...ideaToUpdate, completed: !ideaToUpdate.completed }
+      const response = await fetch('/api/ideas', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedIdea),
+      })
+      const result = await response.json()
+      setIdeas(ideas.map(idea => idea.id === id ? result : idea))
+    }
   }
 
   return (
@@ -107,8 +126,15 @@ export default function ProjectIdeasList() {
         <ul className="space-y-4">
           {filteredIdeas.map(idea => (
             <li key={idea.id} className="border-b pb-4 last:border-b-0 last:pb-0">
-              <h3 className="text-lg font-semibold">{idea.title}</h3>
-              <p className="text-gray-600 mt-1">{idea.description}</p>
+              <div className="flex items-center justify-between">
+                <h3 className={`text-lg font-semibold ${idea.completed ? 'line-through text-gray-500' : ''}`}>{idea.title}</h3>
+                <Checkbox
+                  id={`complete-${idea.id}`}
+                  checked={idea.completed}
+                  onCheckedChange={() => handleToggleComplete(idea.id)}
+                />
+              </div>
+              <p className={`text-gray-600 mt-1 ${idea.completed ? 'line-through' : ''}`}>{idea.description}</p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {idea.tags.map(tag => (
                   <span key={tag} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
