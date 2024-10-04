@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
+interface Idea {
+  id: number;
+  title: string;
+  description: string;
+  tags: string[];
+  completed: boolean;
+}
+
 export async function GET() {
   const cookieStore = cookies()
   const ideasCookie = cookieStore.get('ideas')
@@ -28,7 +36,7 @@ export async function PUT(request: Request) {
   const ideasCookie = cookieStore.get('ideas')
   let ideas = ideasCookie ? JSON.parse(ideasCookie.value) : []
   const updatedIdea = await request.json()
-  ideas = ideas.map((idea: any) => 
+  ideas = ideas.map((idea: Idea) => 
     idea.id === updatedIdea.id ? { ...idea, ...updatedIdea } : idea
   )
   cookieStore.set('ideas', JSON.stringify(ideas))
